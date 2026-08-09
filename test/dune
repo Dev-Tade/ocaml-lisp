@@ -1,0 +1,16 @@
+(test
+ (name test_sexpr)
+ (modules test_sexpr)
+ (libraries ocaml_lisp))
+(test
+ (name test_lexer)
+ (modules test_lexer)
+ (libraries ocaml_lisp))
+(test
+ (name test_parser)
+ (modules test_parser)
+ (libraries ocaml_lisp))
+(test
+ (name test_eval)
+ (modules test_eval)
+ (libraries ocaml_lisp))

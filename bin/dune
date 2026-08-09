@@ -1,0 +1,4 @@
+(executable
+ (public_name ocaml-lisp)
+ (name main)
+ (libraries ocaml_lisp))
