@@ -1,56 +1,33 @@
+open Diagnostics
 
-type tokenKind =
-  | Illegal
-  | LParen
-  | RParen
-  | Symbol of string
-  | Number of int
+module Token = struct
+  type t =
+    | Illegal
+    | LParen
+    | RParen
+    | Symbol of string
+    | Number of int
 
-type token = 
-{
-  kind: tokenKind;
-  line: int;
-  column: int;
-}
+  let to_string = function
+    | Illegal -> "Illegal"
+    | LParen -> "LParen"
+    | RParen -> "RParen"
+    | Symbol s -> "Symbol: \"" ^ s ^ "\""
+    | Number n -> "Number: " ^ string_of_int n
 
-type lexerState = 
+  let print (tok : t) =
+    print_string (to_string tok)
+end
+
+type t = 
 {
   source  : string;
   pos     : int;
-  line    : int;
-  column  : int;
+
+  (* Diagnostics only *)
+  loc     : Location.t
 }
-
-let string_of_token_value = function
-  | Symbol s -> "'" ^ s ^ "'"
-  | Number n -> string_of_int n
-  | _ -> ""
-;;
-
-let string_of_token_kind = function
-  | Illegal -> "Illegal"
-  | LParen -> "LParen"
-  | RParen -> "RParen"
-  | Symbol _ -> "Symbol"
-  | Number _ -> "Number"
-;;
-
-let token_to_string (token : token) =
-  Printf.sprintf 
-    "%s(%d:%d): %s" 
-    (string_of_token_kind token.kind) 
-    token.line token.column
-    (string_of_token_value token.kind)
-;;
-
-let print_token token =
-  print_endline (token_to_string token)
-;;
-
-let make_token kind state =
-  { kind ; line = state.line; column = state.column }
-;;
-
+  
 let isalpha = function
   | '(' | ')' | ' ' | '\t' | '\r' | '\n' -> false
   | _ -> true
@@ -62,29 +39,45 @@ let isdigit = function
 ;;
 
 let text_to_number = function
-  | x -> Number (int_of_string x)
+  | x -> Token.Number (int_of_string x)
 ;;
 
 let text_to_symbol = function
-  | x -> Symbol x
+  | x -> Token.Symbol x
 ;;
 
 let advance state =
-  { state with pos = state.pos + 1; column = state.column + 1; }
+  { 
+    state with 
+    pos = state.pos + 1;
+    loc = {
+      column = state.loc.column + 1;
+      line = state.loc.line;
+      source = state.loc.source
+    }
+  }
 ;;
 
-let rec skip_whitespace(state : lexerState) : lexerState =
+let rec skip_whitespace state =
   if state.pos >= String.length state.source then
     state
   else
     match String.get state.source state.pos with
     | ' ' | '\t' | '\r' -> skip_whitespace (advance state)
     | '\n' -> skip_whitespace 
-      { state with pos = state.pos + 1; line = state.line + 1; column = 0; }
+      { 
+        state with 
+        pos = state.pos + 1;
+        loc = {
+          line = state.loc.line + 1;
+          column = 0;
+          source = state.loc.source;
+        }
+      }
     | _ -> state
 ;;
 
-let read_token_while state predicate transform : (token * lexerState) =
+let read_token_while state predicate transform : ((Token.t * Location.t) * t) =
   let rec loop state =
     if state.pos >= String.length state.source then
       state
@@ -95,29 +88,28 @@ let read_token_while state predicate transform : (token * lexerState) =
       else state
   in
 
-  let out_state = loop state in
-  let text = String.sub state.source state.pos (out_state.pos - state.pos) in
+  let new_state = loop state in
+  let text = String.sub state.source state.pos (new_state.pos - state.pos) in
 
-  let line = state.line in
-  let column = state.column in
-  ({ kind = (transform text); line; column; }, out_state)
+  ((transform text, state.loc), new_state)
 ;;
 
-let lex (source : string) : token list =
-  let rec next_token state : token list =
+let lex (contents : string) ~(source : string) : (Token.t * Location.t) list =
+  let rec next_token state =
     let state = skip_whitespace state in
 
     if state.pos >= String.length state.source then
       []
     else
       let char = String.get state.source state.pos in
+      let loc = state.loc in
 
       match char with
       | '(' -> 
-        (make_token LParen state) :: (next_token (advance state))
+        (Token.LParen, loc) :: (next_token (advance state))
 
       | ')' -> 
-        (make_token RParen state) :: (next_token (advance state))
+        (Token.RParen, loc) :: (next_token (advance state))
 
       | c when isdigit c -> 
         let token, new_state = read_token_while state isdigit text_to_number in
@@ -128,8 +120,12 @@ let lex (source : string) : token list =
         token :: (next_token new_state)
 
       | i -> 
-        failwith (Printf.sprintf "Illegal character: '%c' at %d:%d"
-        i state.line state.column)
+        failwith (Printf.sprintf "Illegal character: '%c' at %s"
+        i (Location.to_string state.loc))
   in 
-  next_token { source; pos = 0; line = 1; column = 0; }
+  next_token { 
+    source = contents; 
+    pos = 0; 
+    loc = { line = 1; column = 1; source } 
+  }
 ;;

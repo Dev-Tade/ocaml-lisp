@@ -1,17 +1,15 @@
+open Diagnostics
 
-type tokenKind =
-  | Illegal
-  | LParen
-  | RParen
-  | Symbol of string
-  | Number of int
+module Token : sig
+  type t =
+    | Illegal
+    | LParen
+    | RParen
+    | Symbol of string
+    | Number of int
 
-type token = {
-  kind: tokenKind;
-  line: int;
-  column: int;
-}
+  val to_string : t -> string
+  val print : t -> unit
+end
 
-val lex : string -> token list 
-val token_to_string : token -> string
-val print_token : token -> unit
+val lex : string -> source:string -> (Token.t * Location.t) list
