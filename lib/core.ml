@@ -1,20 +1,22 @@
-open Value
+open Parser
+open Runtime
 
 let is_truth = function
-  | Number x when x = 0 -> false
+  | Runtime.Number x when x = 0 -> false
   | _ -> true
 
 let is_false = function
-  | Number x when x = 0 -> true
+  | Runtime.Number x when x = 0 -> true
   | _ -> false
 
-let builtin_if (args : Sexpr.expr list) (env : env) : value =
+let builtin_if (args : Sexpr.t list) (env : Environment.t) : Value.t =
   match args with
   | [] -> failwith "Empty if statement"
+  | [cond] -> failwith "Empty if statement <then>"
   | [cond; success] -> (
     if is_truth (Evaluator.eval cond env) then
       Evaluator.eval success env
-    else Unit
+    else Runtime.Unit
   )
   | [cond; success; failure] -> (
     if is_truth (Evaluator.eval cond env) then
@@ -25,14 +27,14 @@ let builtin_if (args : Sexpr.expr list) (env : env) : value =
 
   | _ -> failwith "Too many parts for if-statement"
 
-let builtin_def (args : Sexpr.expr list) (env : env) : value =
+let builtin_def (args : Sexpr.t list) (env : Environment.t) : value =
   match args with
   | [] -> failwith "Missing name, value for def"
   | [name] -> failwith "Missing value for def"
   | [name; value] -> (
-    match name with
-    | Sexpr.Symbol n -> 
-      define env n (Evaluator.eval value env);
+    match Sexpr.raw name with
+    | Sexpr.Symbol name -> 
+      Environment.define env name (Evaluator.eval value env);
       Unit
 
     | _ -> failwith "Name for def must be a symbol"
@@ -45,18 +47,18 @@ let builtin_def (args : Sexpr.expr list) (env : env) : value =
   *)
   | _ -> failwith "Too many parts for def"
 
-let builtin_function (args : Sexpr.expr list) (env : env) : value =
+let builtin_function (args : Sexpr.t list) (environment : Environment.t) : Value.t =
   match args with
-  | [Sexpr.List parameters; body] ->
+  | [Sexpr.List parameters, _; body] ->
     let params = List.map (
       function
-      | Sexpr.Symbol name -> name
+      | Sexpr.Symbol name, _ -> name
       | _ -> failwith "Function parameter name must be a symbol"
     ) parameters
     in Function {
+      closure = environment;
       params;
       body;
-      env
     }
   | _ -> failwith "Function expects parameters (list) and body"
 
@@ -71,17 +73,17 @@ let builtin_is_falsy (args : value list) : value =
 ;;
 
 let builtin_print (values : value list) =
-  List.iter (fun v -> Value.print_value v) values;
-  Value.Unit
+  List.iter (fun v -> Value.print v; print_newline ()) values;
+  Runtime.Unit
 ;;
 
-let core = 
-  let env = create None in
-  define env "if" (SpecialForm builtin_if);
-  define env "def" (SpecialForm builtin_def);
-  define env "function" (SpecialForm builtin_function);
-  define env "is_truthy" (NativeFunction builtin_is_truthy);
-  define env "is_falsy" (NativeFunction builtin_is_falsy);
-  define env "print" (NativeFunction builtin_print);
-  env
+let std = 
+  let std = Environment.create None in
+  Environment.define std "if" (SpecialForm builtin_if);
+  Environment.define std "def" (SpecialForm builtin_def);
+  Environment.define std "function" (SpecialForm builtin_function);
+  Environment.define std "is_truthy" (NativeFunction builtin_is_truthy);
+  Environment.define std "is_falsy" (NativeFunction builtin_is_falsy);
+  Environment.define std "print" (NativeFunction builtin_print);
+  std
 ;;
