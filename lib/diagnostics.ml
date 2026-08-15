@@ -18,16 +18,25 @@ module Location = struct
     print_string (to_string loc)
 end
 
-module Msg = struct
+module Error = struct
   type t =
+    (* Lexer Errors *)
+    | Unexpected_Character of Location.t * string
+    (* Parser Errors *)
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
+    (* Evaluator/Runtime Errors *)
     | Unbound_Symbol of Location.t * string
-    | Not_Callable of Location.t * string
+    | Not_Applicable of Location.t * string
     | Arity_Mismatch of Location.t * string
 
   let to_string (msg : t) : string =
     match msg with
+    | Unexpected_Character (loc, reason) ->
+      Printf.sprintf "%s: Unexpected character: %s"
+        (Location.to_string loc)
+        reason
+
     | Unexpected_Token (loc, reason) ->
       Printf.sprintf "%s: Unexpected token: %s"
         (Location.to_string loc)
@@ -43,7 +52,7 @@ module Msg = struct
         (Location.to_string loc)
         reason
     
-    | Not_Callable (loc, reason) ->
+    | Not_Applicable (loc, reason) ->
       Printf.sprintf "%s: Not callable: %s"
         (Location.to_string loc)
         reason
@@ -54,4 +63,4 @@ module Msg = struct
         reason
 end
 
-exception Message of Msg.t
+exception Error of Error.t

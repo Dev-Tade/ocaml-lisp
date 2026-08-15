@@ -12,8 +12,8 @@ let rec eval expr environment =
     | None ->
       (* Symbol is unbound *)
       raise (
-        Diagnostics.Message
-        (Diagnostics.Msg.Unbound_Symbol (Sexpr.location expr, s))
+        Diagnostics.Error
+        (Diagnostics.Error.Unbound_Symbol (Sexpr.location expr, s))
       )
   )
 
@@ -54,8 +54,8 @@ let rec eval expr environment =
       (* Make sure function arity matches provided arguments *)
       if List.length fnc.params <> List.length args then
         raise (
-          Diagnostics.Message
-          (Diagnostics.Msg.Arity_Mismatch (
+          Diagnostics.Error
+          (Diagnostics.Error.Arity_Mismatch (
             Sexpr.location head, 
             (Printf.sprintf "%s expected %d, but got %d"
               (Value.to_string func)
@@ -83,9 +83,10 @@ let rec eval expr environment =
     (* Not applicable function func *)
     | _ ->  
       raise (
-        Diagnostics.Message
-        (Diagnostics.Msg.Not_Callable 
-        (Sexpr.location expr, Value.to_string func))
+        Diagnostics.Error (
+          Diagnostics.Error.Not_Applicable 
+          (Sexpr.location expr, Value.to_string func)
+        )
       )
   )
 ;;

@@ -67,8 +67,10 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
           | None -> failwith "How did you reach this?"
         in
         raise (
-          Diagnostics.Message 
-          (Diagnostics.Msg.Unexpected_EndOfInput (eoi_loc, "Missing ')'"))
+          Diagnostics.Error (
+            Diagnostics.Error.Unexpected_EndOfInput 
+            (eoi_loc, "Missing ')'")
+          )
         )
     )
 
@@ -79,8 +81,10 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
       (* Illegal Token *) 
       | Token.Illegal -> 
         raise (
-          Diagnostics.Message 
-          (Diagnostics.Msg.Unexpected_Token (loc, Token.to_string tok))
+          Diagnostics.Error (
+            Diagnostics.Error.Unexpected_Token 
+            (loc, Token.to_string tok)
+          )
         )
 
       (* List opening *)
@@ -105,8 +109,10 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
         (* Close a non existent list *)
         | [] ->
           raise (
-            Diagnostics.Message
-            (Diagnostics.Msg.Unexpected_Token (loc, Token.to_string tok))
+            Diagnostics.Error (
+              Diagnostics.Error.Unexpected_Token 
+              (loc, Token.to_string tok)
+            )
           )
         (* Close the current list being parsed *)
         | (parent_list, opening_loc) :: rest_stack -> 

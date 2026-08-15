@@ -120,8 +120,12 @@ let lex (contents : string) ~(source : string) : (Token.t * Location.t) list =
         token :: (next_token new_state)
 
       | i -> 
-        failwith (Printf.sprintf "Illegal character: '%c' at %s"
-        i (Location.to_string state.loc))
+        raise (
+          Diagnostics.Error (
+            Diagnostics.Error.Unexpected_Character 
+            (state.loc, Printf.sprintf "\'%c\'" i)
+          )
+        )
   in 
   next_token { 
     source = contents; 
