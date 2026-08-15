@@ -1,2 +1,22 @@
+open Diagnostics
+open Lexer
 
-val parse : Lexer.token list -> Sexpr.expr list
+module Sexpr : sig  
+  type node =
+    | Symbol of string
+    | Number of int
+    | List of t list
+  and t = node Location.located
+
+  val raw : t -> node
+  val location : t -> Location.t
+
+  val make_symbol : string -> Location.t -> t
+  val make_number : int -> Location.t -> t
+  val make_list : t list -> Location.t -> t
+
+  val to_string : t -> string
+  val print : ?locate:bool -> t -> unit
+end
+
+val parse : (Lexer.Token.t * Location.t) list -> Sexpr.t list

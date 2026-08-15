@@ -17,3 +17,23 @@ module Location = struct
   let print (loc: t) : unit =
     print_string (to_string loc)
 end
+
+module Msg = struct
+  type t =
+    | Unexpected_Token of Location.t * string
+    | Unexpected_EndOfInput of Location.t * string
+
+  let to_string (msg : t) : string =
+    match msg with
+    | Unexpected_Token (loc, reason) ->
+      Printf.sprintf "%s: Unexpected token: %s"
+        (Location.to_string loc)
+        reason
+    
+    | Unexpected_EndOfInput (loc, reason) ->
+      Printf.sprintf "%s: Unexpected end of input: %s"
+        (Location.to_string loc)
+        reason
+end
+
+exception Message of Msg.t
