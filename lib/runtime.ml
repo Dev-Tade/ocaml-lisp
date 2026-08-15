@@ -14,8 +14,8 @@ type value =
   | List of value list
   | NativeFunction of metadata * (metadata -> value list -> value)
   | SpecialForm of metadata * (metadata -> Sexpr.t list -> environment -> value)
-  | Function of metadata * runtime_function
-and runtime_function = 
+  | Lambda of metadata * lambda
+and lambda = 
 {
   closure: environment;
   params: string list;
@@ -61,7 +61,13 @@ module Value = struct
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
     | NativeFunction (meta, _) -> "(native "^ Metadata.to_string meta ^ ")"
     | SpecialForm (meta, _) -> "(special-form " ^ Metadata.to_string meta ^ ")"
-    | Function _ -> "(function)"
+    | Lambda (meta, func) -> 
+      let args =
+        "(" ^ String.concat " " func.params ^ ")"
+      in
+    
+      "(lambda " ^ Metadata.to_string meta ^ " " ^ args ^ ")"
+
 
   let print (v : t) : unit = 
     print_string (to_string v);

@@ -13,8 +13,8 @@ type value =
   | List of value list
   | NativeFunction of metadata * (metadata -> value list -> value)
   | SpecialForm of metadata * (metadata -> Sexpr.t list -> environment -> value)
-  | Function of metadata * runtime_function
-and runtime_function = 
+  | Lambda of metadata * lambda
+and lambda = 
 {
   closure: environment;
   params: string list;

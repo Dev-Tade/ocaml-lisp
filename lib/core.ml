@@ -41,9 +41,9 @@ let builtin_def =
       | Sexpr.Symbol binding_name -> 
         let binding_value = 
           match Evaluator.eval value environment with
-          (* Wrap Runtime.Function to use def binding_name as metadata name *)
-          | Runtime.Function (base_meta, func) -> 
-            Runtime.Function ({base_meta with name = Some binding_name} , func)
+          (* Wrap Runtime.Lambda to use def binding_name as metadata name *)
+          | Runtime.Lambda (base_meta, func) -> 
+            Runtime.Lambda ({base_meta with name = Some binding_name}, func)
           (* Return the value as it is *)
           | value -> value 
         in
@@ -64,7 +64,7 @@ let builtin_def =
 
   SpecialForm (Metadata.make "def" __FILE__ __LINE__ 0, impl)
 
-let builtin_function =
+let builtin_lambda =
   let impl metadata args environment =
     match args with
     | [Sexpr.List parameters, _; body] ->
@@ -73,15 +73,15 @@ let builtin_function =
         | Sexpr.Symbol name, _ -> name
         | _ -> failwith "Function parameter name must be a symbol"
       ) parameters
-      in Function (metadata, {
+      in Lambda ({metadata with name = None}, {
         closure = environment;
         params;
         body;
       })
-    | _ -> failwith "Function expects parameters (list) and body"
+    | _ -> failwith "Lambda expects parameters (list) and body"
   in
 
-  SpecialForm (Metadata.make "function" __FILE__ __LINE__ 0, impl)
+  SpecialForm (Metadata.make "lambda" __FILE__ __LINE__ 0, impl)
 
 
 let builtin_is_truthy =
@@ -112,7 +112,7 @@ let std =
   let std = Environment.create None in
   Environment.define std "if" builtin_if;
   Environment.define std "def" builtin_def;
-  Environment.define std "function" builtin_function;
+  Environment.define std "lambda" builtin_lambda;
   Environment.define std "is_truthy" builtin_is_truthy;
   Environment.define std "is_falsy" builtin_is_falsy;
   Environment.define std "print" builtin_print;

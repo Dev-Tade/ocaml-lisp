@@ -56,24 +56,24 @@ let rec eval expr environment =
       special_form use_meta args environment
 
     (* Lisp defined function *)
-    | Runtime.Function (meta, lisp_function) ->
+    | Runtime.Lambda (meta, lambda) ->
       (* Make sure function arity matches provided arguments *)
-      if List.length lisp_function.params <> List.length args then
+      if List.length lambda.params <> List.length args then
         raise (
           Diagnostics.Error
           (Diagnostics.Error.Arity_Mismatch (
             Sexpr.location head, 
-            (Printf.sprintf "%s expects %d arguments, but got %d"
+            (Printf.sprintf "%s expects %d arguments but got %d"
               (match meta.name with 
               | Some name -> name 
-              | None -> "<anonymous-function>")
-              (List.length lisp_function.params)
+              | None -> "anonymous lambda")
+              (List.length lambda.params)
               (List.length args))
           ))
         );
 
       (* Create a closure with parent being function closure when defined *)
-      let closure = Environment.create (Some lisp_function.closure) in
+      let closure = Environment.create (Some lambda.closure) in
       (* 
         Translate Sexpr.t arguments to Value.t for Runtime.Function 
         This means arguments to fnc are evaluated before hand as:
@@ -84,9 +84,9 @@ let rec eval expr environment =
       (* Bind fnc.params to values in the function closure *)
       List.iter2 
         (fun name value -> Environment.define closure name value) 
-        lisp_function.params values;
+        lambda.params values;
 
-      eval lisp_function.body closure
+      eval lambda.body closure
     
     (* Not applicable function func *)
     | _ ->  
