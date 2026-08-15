@@ -21,7 +21,7 @@ end
 module Error = struct
   type t =
     (* Lexer Errors *)
-    | Unexpected_Character of Location.t * string
+    | Unexpected_Character of Location.t * char
     (* Parser Errors *)
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
@@ -33,32 +33,32 @@ module Error = struct
   let to_string (msg : t) : string =
     match msg with
     | Unexpected_Character (loc, reason) ->
-      Printf.sprintf "%s: Unexpected character: %s"
+      Printf.sprintf "%s: Unexpected character '%c'"
         (Location.to_string loc)
         reason
 
     | Unexpected_Token (loc, reason) ->
-      Printf.sprintf "%s: Unexpected token: %s"
+      Printf.sprintf "%s: Unexpected token %s"
         (Location.to_string loc)
         reason
     
     | Unexpected_EndOfInput (loc, reason) ->
-      Printf.sprintf "%s: Unexpected end of input: %s"
+      Printf.sprintf "%s: Unexpected end of input, %s"
         (Location.to_string loc)
         reason
     
     | Unbound_Symbol (loc, reason) ->
-      Printf.sprintf "%s: Unbound symbol: %s"
+      Printf.sprintf "%s: Unbound symbol \"%s\""
         (Location.to_string loc)
         reason
     
     | Not_Applicable (loc, reason) ->
-      Printf.sprintf "%s: Not callable: %s"
+      Printf.sprintf "%s: Not aplicable %s"
         (Location.to_string loc)
         reason
 
     | Arity_Mismatch (loc, reason) ->
-      Printf.sprintf "%s: Arity mismatch: %s"
+      Printf.sprintf "%s: Arity mismatch, %s"
         (Location.to_string loc)
         reason
 end

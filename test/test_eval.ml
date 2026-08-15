@@ -1,3 +1,4 @@
+open Ocaml_lisp.Runtime
 open Ocaml_lisp
 
 let make_arithmetic_op name initial op values =
@@ -14,8 +15,8 @@ let make_arithmetic_op name initial op values =
   apply values initial
 ;; 
 
-let builtin_add = make_arithmetic_op "+" 0 (fun acc n -> acc + n)
-let builtin_mul = make_arithmetic_op "*" 1 (fun acc n -> acc * n)
+let builtin_add meta = make_arithmetic_op "+" 0 (fun acc n -> acc + n)
+let builtin_mul meta = make_arithmetic_op "*" 1 (fun acc n -> acc * n)
 
 
 let () =
@@ -27,8 +28,10 @@ let () =
   let sexpr = Parser.parse tokens in
   
   let env = Runtime.Environment.create None in
-  Runtime.Environment.define env "+" (NativeFunction builtin_add);
-  Runtime.Environment.define env "*" (NativeFunction builtin_mul);
+  Runtime.Environment.define env "+" (NativeFunction (
+    Metadata.none, builtin_add ));
+  Runtime.Environment.define env "*" (NativeFunction ( 
+    Metadata.none, builtin_mul ));
 
   List.iter (
     fun expr -> (

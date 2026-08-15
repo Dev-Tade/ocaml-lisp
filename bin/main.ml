@@ -14,15 +14,38 @@ let make_arithmetic_op name initial op values =
   apply values initial
 ;; 
 
-let builtin_add = make_arithmetic_op "+" 0 (fun acc n -> acc + n)
-let builtin_mul = make_arithmetic_op "*" 1 (fun acc n -> acc * n)
+let builtin_add =
+  (Runtime.NativeFunction (
+    {
+      name = Some "builtin_add"; 
+      location = Some { 
+        source = __FILE__;
+        line = __LINE__;
+        column = 0;
+      }
+    },
+    (fun meta -> make_arithmetic_op "+" 0 (fun acc n -> acc + n)))
+  )
+  
+let builtin_mul meta = make_arithmetic_op "*" 1 (fun acc n -> acc * n)
 
 let () =
   let repl_env = Runtime.Environment.create (Some Core.std) in
 
   (* Include non core builtins *)
-  Runtime.Environment.define repl_env "+" (NativeFunction builtin_add);
-  Runtime.Environment.define repl_env "*" (NativeFunction builtin_mul);
+  Runtime.Environment.define repl_env "+" builtin_add;
+  Runtime.Environment.define repl_env "*" (
+    NativeFunction (
+      {
+        name = Some "builtin_mul";
+        location = Some {
+          source = __FILE__;
+          line = __LINE__;
+          column = 0;
+        }
+      }, builtin_mul
+    )
+  );
 
   let rec repl () =
     print_string "ocaml-lisp> ";

@@ -28,7 +28,7 @@ let rec eval expr environment =
     (* Apply the function func depending on type *)
     match func with
     (* OCaml defined function *)
-    | Runtime.NativeFunction native -> 
+    | Runtime.NativeFunction (meta, native) -> 
       (* 
         Translate Sexpr.t arguments to Runtime.Value.t 
         for Runtime.NativeFunction 
@@ -36,7 +36,10 @@ let rec eval expr environment =
         (print (+ 2 2)) = (+ 2 2) |> (native print)
       *)
       let args = List.map (fun expr -> eval expr environment) args in
-      native args
+      
+      (* Replace metadata location with head application location *)
+      let use_meta = { meta with location = Some (Sexpr.location head) } in
+      native use_meta args
     
     (* Language SpecialForm implemented in OCaml *)
     (* 
@@ -47,25 +50,30 @@ let rec eval expr environment =
       to receive the unevaluated expression, then it has <name>
       as Symbol s, and does eval <value> environment
     *)
-    | Runtime.SpecialForm sform -> sform args environment
+    | Runtime.SpecialForm (meta, special_form) -> 
+      (* Replace metadata location with head application location *)
+      let use_meta = { meta with location = Some (Sexpr.location head) } in
+      special_form use_meta args environment
 
     (* Lisp defined function *)
-    | Runtime.Function fnc ->
+    | Runtime.Function (meta, lisp_function) ->
       (* Make sure function arity matches provided arguments *)
-      if List.length fnc.params <> List.length args then
+      if List.length lisp_function.params <> List.length args then
         raise (
           Diagnostics.Error
           (Diagnostics.Error.Arity_Mismatch (
             Sexpr.location head, 
-            (Printf.sprintf "%s expected %d, but got %d"
-              (Value.to_string func)
-              (List.length fnc.params)
+            (Printf.sprintf "%s expects %d arguments, but got %d"
+              (match meta.name with 
+              | Some name -> name 
+              | None -> "<anonymous-function>")
+              (List.length lisp_function.params)
               (List.length args))
           ))
         );
 
       (* Create a closure with parent being function closure when defined *)
-      let closure = Environment.create (Some fnc.closure) in
+      let closure = Environment.create (Some lisp_function.closure) in
       (* 
         Translate Sexpr.t arguments to Value.t for Runtime.Function 
         This means arguments to fnc are evaluated before hand as:
@@ -76,9 +84,9 @@ let rec eval expr environment =
       (* Bind fnc.params to values in the function closure *)
       List.iter2 
         (fun name value -> Environment.define closure name value) 
-        fnc.params values;
+        lisp_function.params values;
 
-      eval fnc.body closure
+      eval lisp_function.body closure
     
     (* Not applicable function func *)
     | _ ->  

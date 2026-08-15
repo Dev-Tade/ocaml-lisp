@@ -123,7 +123,7 @@ let lex (contents : string) ~(source : string) : (Token.t * Location.t) list =
         raise (
           Diagnostics.Error (
             Diagnostics.Error.Unexpected_Character 
-            (state.loc, Printf.sprintf "\'%c\'" i)
+            (state.loc, i)
           )
         )
   in 

@@ -1,22 +1,56 @@
+open Diagnostics
 open Parser
+
+type metadata = 
+{
+  name : string option;
+  location : Location.t option;
+}
 
 type value =
   | Unit
   | Number of int
   | Symbol of string
   | List of value list
-  | NativeFunction of (value list -> value)
-  | SpecialForm of (Sexpr.t list -> environment -> value)
-  | Function of {
-    closure: environment;
-    params: string list;
-    body: Sexpr.t;
-  }
+  | NativeFunction of metadata * (metadata -> value list -> value)
+  | SpecialForm of metadata * (metadata -> Sexpr.t list -> environment -> value)
+  | Function of metadata * runtime_function
+and runtime_function = 
+{
+  closure: environment;
+  params: string list;
+  body: Sexpr.t;
+}
 and environment =
 { 
   values : (string, value) Hashtbl.t;
   parent : environment option;
 }
+module Metadata = struct
+  type t = metadata
+  let none = { name = None; location = None; }
+  
+  let make name file line column =
+    { name = Some name; location = Some { source = file; line; column = column; } }
+
+  let to_string metadata =
+    let name = 
+      match metadata.name with
+      | None -> "anonymous"
+      | Some n -> n
+    in
+
+    let location = 
+      match metadata.location with
+      | None -> ""
+      | Some l -> " @ " ^ Location.to_string l
+    in
+
+    name ^ location
+
+  let print metadata =
+    print_string (to_string metadata)
+end
 module Value = struct
   type t = value
   
@@ -25,8 +59,8 @@ module Value = struct
     | Number n -> Printf.sprintf "(number %d)" n 
     | Symbol s -> Printf.sprintf "(number %s)" s 
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
-    | NativeFunction _ -> "(native-function)"
-    | SpecialForm _ -> "(special-form)"
+    | NativeFunction (meta, _) -> "(native "^ Metadata.to_string meta ^ ")"
+    | SpecialForm (meta, _) -> "(special-form " ^ Metadata.to_string meta ^ ")"
     | Function _ -> "(function)"
 
   let print (v : t) : unit = 
