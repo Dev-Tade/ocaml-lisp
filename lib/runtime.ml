@@ -8,9 +8,9 @@ type value =
   | NativeFunction of (value list -> value)
   | SpecialForm of (Sexpr.t list -> environment -> value)
   | Function of {
+    closure: environment;
     params: string list;
     body: Sexpr.t;
-    env: environment
   }
 and environment =
 { 

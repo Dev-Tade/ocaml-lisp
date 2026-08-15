@@ -22,6 +22,9 @@ module Msg = struct
   type t =
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
+    | Unbound_Symbol of Location.t * string
+    | Not_Callable of Location.t * string
+    | Arity_Mismatch of Location.t * string
 
   let to_string (msg : t) : string =
     match msg with
@@ -32,6 +35,21 @@ module Msg = struct
     
     | Unexpected_EndOfInput (loc, reason) ->
       Printf.sprintf "%s: Unexpected end of input: %s"
+        (Location.to_string loc)
+        reason
+    
+    | Unbound_Symbol (loc, reason) ->
+      Printf.sprintf "%s: Unbound symbol: %s"
+        (Location.to_string loc)
+        reason
+    
+    | Not_Callable (loc, reason) ->
+      Printf.sprintf "%s: Not callable: %s"
+        (Location.to_string loc)
+        reason
+
+    | Arity_Mismatch (loc, reason) ->
+      Printf.sprintf "%s: Arity mismatch: %s"
         (Location.to_string loc)
         reason
 end
