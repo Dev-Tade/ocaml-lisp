@@ -29,7 +29,7 @@ let builtin_if =
     | _ -> failwith "Too many parts for if-statement"
   in
 
-  SpecialForm (Metadata.make "if" __FILE__ __LINE__ 0, impl)
+  SpecialForm (impl, Metadata.make "if" __FILE__ __LINE__ 0)
 
 let builtin_def =
   let impl metadata args environment =
@@ -42,8 +42,8 @@ let builtin_def =
         let binding_value = 
           match Evaluator.eval value environment with
           (* Wrap Runtime.Lambda to use def binding_name as metadata name *)
-          | Runtime.Lambda (base_meta, func) -> 
-            Runtime.Lambda ({base_meta with name = Some binding_name}, func)
+          | Runtime.Lambda (func, base_meta) -> 
+            Runtime.Lambda (func, {base_meta with name = Some binding_name})
           (* Return the value as it is *)
           | value -> value 
         in
@@ -62,7 +62,7 @@ let builtin_def =
     | _ -> failwith "Too many parts for def"
   in
 
-  SpecialForm (Metadata.make "def" __FILE__ __LINE__ 0, impl)
+  SpecialForm (impl, Metadata.make "def" __FILE__ __LINE__ 0)
 
 let builtin_lambda =
   let impl metadata args environment =
@@ -73,15 +73,15 @@ let builtin_lambda =
         | Sexpr.Symbol name, _ -> name
         | _ -> failwith "Function parameter name must be a symbol"
       ) parameters
-      in Lambda ({metadata with name = None}, {
+      in Lambda ({
         closure = environment;
         params;
         body;
-      })
+      }, {metadata with name = None})
     | _ -> failwith "Lambda expects parameters (list) and body"
   in
 
-  SpecialForm (Metadata.make "lambda" __FILE__ __LINE__ 0, impl)
+  SpecialForm (impl, Metadata.make "lambda" __FILE__ __LINE__ 0)
 
 let builtin_quote =
   let impl (metadata : Metadata.t) args (envirnoment : Environment.t) =
@@ -98,7 +98,7 @@ let builtin_quote =
     | _ -> failwith "Too many arguments for Quote"
   in
 
-  SpecialForm (Metadata.make "quote" __FILE__ __LINE__ 0, impl)
+  SpecialForm (impl, Metadata.make "quote" __FILE__ __LINE__ 0)
 
 let builtin_is_truthy =
   let impl metadata args =
@@ -106,7 +106,7 @@ let builtin_is_truthy =
     else Number 0
   in
 
-  NativeFunction (Metadata.make "is_truthy" __FILE__ __LINE__ 0, impl)
+  NativeFunction (impl, Metadata.make "is_truthy" __FILE__ __LINE__ 0)
 
 let builtin_is_falsy =
   let impl metadata args =
@@ -114,7 +114,7 @@ let builtin_is_falsy =
     else Number 0
   in
 
-  NativeFunction (Metadata.make "is_falsy" __FILE__ __LINE__ 0, impl)
+  NativeFunction (impl, Metadata.make "is_falsy" __FILE__ __LINE__ 0)
 
 let builtin_print =
   let impl metadata args =
@@ -122,7 +122,7 @@ let builtin_print =
     Runtime.Unit
   in
 
-  NativeFunction (Metadata.make "print" __FILE__ __LINE__ 0, impl)
+  NativeFunction (impl, Metadata.make "print" __FILE__ __LINE__ 0)
 
 let std = 
   let std = Environment.create None in

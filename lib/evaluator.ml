@@ -28,7 +28,7 @@ let rec eval expr environment =
     (* Apply the function func depending on type *)
     match func with
     (* OCaml defined function *)
-    | Runtime.NativeFunction (meta, native) -> 
+    | Runtime.NativeFunction (native, meta) -> 
       (* 
         Translate Sexpr.t arguments to Runtime.Value.t 
         for Runtime.NativeFunction 
@@ -50,13 +50,13 @@ let rec eval expr environment =
       to receive the unevaluated expression, then it has <name>
       as Symbol s, and does eval <value> environment
     *)
-    | Runtime.SpecialForm (meta, special_form) -> 
+    | Runtime.SpecialForm (special_form, meta) -> 
       (* Replace metadata location with head application location *)
       let use_meta = { meta with location = Some (Sexpr.location head) } in
       special_form use_meta args environment
 
     (* Lisp defined function *)
-    | Runtime.Lambda (meta, lambda) ->
+    | Runtime.Lambda (lambda, meta) ->
       (* Make sure function arity matches provided arguments *)
       if List.length lambda.params <> List.length args then
         raise (

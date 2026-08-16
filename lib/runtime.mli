@@ -11,9 +11,9 @@ type value =
   | Number of int
   | Symbol of string
   | List of value list
-  | NativeFunction of metadata * (metadata -> value list -> value)
-  | SpecialForm of metadata * (metadata -> Sexpr.t list -> environment -> value)
-  | Lambda of metadata * lambda
+  | NativeFunction of (metadata -> value list -> value) * metadata
+  | SpecialForm of (metadata -> Sexpr.t list -> environment -> value) * metadata
+  | Lambda of lambda * metadata
 and lambda = 
 {
   closure: environment;

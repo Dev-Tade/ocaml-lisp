@@ -12,9 +12,9 @@ type value =
   | Number of int
   | Symbol of string
   | List of value list
-  | NativeFunction of metadata * (metadata -> value list -> value)
-  | SpecialForm of metadata * (metadata -> Sexpr.t list -> environment -> value)
-  | Lambda of metadata * lambda
+  | NativeFunction of (metadata -> value list -> value) * metadata
+  | SpecialForm of (metadata -> Sexpr.t list -> environment -> value) * metadata
+  | Lambda of lambda * metadata
 and lambda = 
 {
   closure: environment;
@@ -59,9 +59,9 @@ module Value = struct
     | Number n -> Printf.sprintf "(number %d)" n 
     | Symbol s -> Printf.sprintf "(symbol %s)" s
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
-    | NativeFunction (meta, _) -> "(native "^ Metadata.to_string meta ^ ")"
-    | SpecialForm (meta, _) -> "(special-form " ^ Metadata.to_string meta ^ ")"
-    | Lambda (meta, func) -> 
+    | NativeFunction (_, meta) -> "(native "^ Metadata.to_string meta ^ ")"
+    | SpecialForm (_, meta) -> "(special-form " ^ Metadata.to_string meta ^ ")"
+    | Lambda (func, meta) -> 
       let args = "(" ^ String.concat " " func.params ^ ")" in
       "(lambda " ^ Metadata.to_string meta ^ " " ^ args ^ ")"
 

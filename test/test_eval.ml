@@ -29,9 +29,9 @@ let () =
   
   let env = Runtime.Environment.create None in
   Runtime.Environment.define env "+" (NativeFunction (
-    Metadata.none, builtin_add ));
+    builtin_add, Metadata.none));
   Runtime.Environment.define env "*" (NativeFunction ( 
-    Metadata.none, builtin_mul ));
+    builtin_mul, Metadata.none ));
 
   List.iter (
     fun expr -> (
