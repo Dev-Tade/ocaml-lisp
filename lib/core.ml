@@ -83,6 +83,22 @@ let builtin_lambda =
 
   SpecialForm (Metadata.make "lambda" __FILE__ __LINE__ 0, impl)
 
+let builtin_quote =
+  let impl (metadata : Metadata.t) args (envirnoment : Environment.t) =
+    let rec quote arg = 
+      match Sexpr.raw arg with
+      | Sexpr.Number n -> Runtime.Number n
+      | Sexpr.Symbol s -> Runtime.Symbol s
+      | Sexpr.List xs ->
+        Runtime.List ( List.map quote xs )
+    in
+    match args with
+    | [expr] -> quote expr
+    | [] -> failwith "Quote expects something"
+    | _ -> failwith "Too many arguments for Quote"
+  in
+
+  SpecialForm (Metadata.make "quote" __FILE__ __LINE__ 0, impl)
 
 let builtin_is_truthy =
   let impl metadata args =
@@ -113,6 +129,7 @@ let std =
   Environment.define std "if" builtin_if;
   Environment.define std "def" builtin_def;
   Environment.define std "lambda" builtin_lambda;
+  Environment.define std "quote" builtin_quote;
   Environment.define std "is_truthy" builtin_is_truthy;
   Environment.define std "is_falsy" builtin_is_falsy;
   Environment.define std "print" builtin_print;

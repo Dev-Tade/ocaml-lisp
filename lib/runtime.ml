@@ -57,17 +57,13 @@ module Value = struct
   let rec to_string = function
     | Unit -> "(unit)"
     | Number n -> Printf.sprintf "(number %d)" n 
-    | Symbol s -> Printf.sprintf "(number %s)" s 
+    | Symbol s -> Printf.sprintf "(symbol %s)" s
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
     | NativeFunction (meta, _) -> "(native "^ Metadata.to_string meta ^ ")"
     | SpecialForm (meta, _) -> "(special-form " ^ Metadata.to_string meta ^ ")"
     | Lambda (meta, func) -> 
-      let args =
-        "(" ^ String.concat " " func.params ^ ")"
-      in
-    
+      let args = "(" ^ String.concat " " func.params ^ ")" in
       "(lambda " ^ Metadata.to_string meta ^ " " ^ args ^ ")"
-
 
   let print (v : t) : unit = 
     print_string (to_string v);
