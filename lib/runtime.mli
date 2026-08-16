@@ -1,11 +1,5 @@
 open Parser
 
-type metadata =
-{
-  name : string option;
-  location : Diagnostics.Location.t option;
-}
-
 type value =
   | Unit
   | Number of int
@@ -24,6 +18,11 @@ and environment =
 { 
   values : (string, value) Hashtbl.t;
   parent : environment option;
+}
+and metadata =
+{
+  name : string option;
+  location : Diagnostics.Location.t option;
 }
 module Value : sig
   type t = value
