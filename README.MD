@@ -7,17 +7,17 @@ Being my first time with a new language and paradigm don't expect good code qual
   * Numbers (**integers only**), Lists
   * `if <cond> <success> <failure>`
   * `def <name> <value>`
-  * `function (<params>) <body>`
+  * `lambda (<params>) <body>`
   * `+ (add)` and `* (multiply)` operations for **Numbers only**
 
 ### Try it:
 Run `dune exec ocaml-lisp` to enter in a repl.
 Beware its full of errors, for example:
 ```lisp
-ocaml-lisp> ((function (x) (x)) 2 4)
+ocaml-lisp> ((lambda (x) (x)) 2 4)
 Fatal error: exception Invalid_argument("List.iter2")
 ```
-This crashes out the repl, The problem here is that there are more arguments being applied than the arity of the function, however because of poor code quality and structure this case isn't managed and thus crashes.
+This crashes out the repl, The problem here is that there are more arguments being applied than the arity of the lambda, however because of poor code quality and structure this case isn't managed and thus crashes.
 
 Some other examples (that do work as "expected"):
 ```lisp
@@ -47,33 +47,33 @@ Notice how here `(number 2)` appears twice, when there's a `#` preceding the out
 
 Lets define a function
 ```lisp
-ocaml-lisp> (function (x) x)
-# (function)
+ocaml-lisp> (lambda (x) x)
+# (lambda)
 ```
 Lets apply something to it
 ```lisp
-ocaml-lisp> ((function (x) x) 2)
+ocaml-lisp> ((lambda (x) x) 2)
 # (number 2)
 ```
 Simple identity function isn't it?
 
 Functions require the parameter section to be a list:
 ```lisp
-ocaml-lisp> (function a a)
+ocaml-lisp> (lambda a a)
 ! Error: Function expects parameters (list) and body
-ocaml-lisp> (function (a) a)
-# (function)
-ocaml-lisp> (function (a))
+ocaml-lisp> (lambda (a) a)
+# (lambda)
+ocaml-lisp> (lambda (a))
 ! Error: Function expects parameters (list) and body
 ```
 Notice how again because of poor code quality and structure, it can't tell you what's exactly missing. In the second error it should tell you that the body is missing.
 
 Now this isn't useful at all, save it to a binding so its useful:
 ```lisp
-ocaml-lisp> (def identity (function (a) a))
+ocaml-lisp> (def identity (lambda (a) a))
 # (unit)
 ocaml-lisp> identity
-# (function)
+# (lambda)
 ocaml-lisp> (identity 2)
 # (number 2)
 ```
