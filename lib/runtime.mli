@@ -24,7 +24,7 @@ type value =
 | List of value list
 | Native of native
 | SpecialForm of special_form
-| Lambda of lambda * metadata
+| Lambda of lambda
 and native =
 {
   applicable : applicable;
@@ -39,9 +39,10 @@ and special_form =
 }
 and lambda = 
 {
-  closure: environment;
-  params: string list;
-  body: Sexpr.t;
+  applicable : applicable;
+  metadata   : metadata;
+  closure    : environment;
+  body       : Sexpr.t;
 }
 and environment =
 { 

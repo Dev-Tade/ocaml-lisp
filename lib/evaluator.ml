@@ -35,14 +35,10 @@ let rec eval (expr : Sexpr.t) (environment : Environment.t) =
 
 and apply value args environment metadata : Value.t =
   (* 
-    Placeholder location for when apply metadata is invalid or lcoation can't be determined by definition metadata
+    Placeholder location for when apply metadata is invalid or location can't be determined by definition metadata
   *)
   let apply_loc : Diagnostics.Location.t = 
-    { 
-      source = __FILE__;
-      line = __LINE__;
-      column = 0; 
-    }
+    { source = __FILE__; line = __LINE__; column = 0; }
   in
 
   (* 
@@ -51,6 +47,7 @@ and apply value args environment metadata : Value.t =
     (print (+ 2 2)) = (+ 2 2) = 4 |> print
   *)
   let eval_args args = List.map (fun arg -> eval arg environment) args in
+  let arg_count = List.length args in
 
   (* Dispatch application type *)
   match value with
@@ -60,19 +57,16 @@ and apply value args environment metadata : Value.t =
     let use_meta = Metadata.fill_w_fallback metadata native.metadata in
 
     (* Match argument count against arity  *)
-    if not (Applicable.check native.applicable.arity (List.length args)) then
+    if not (Applicable.check native.applicable.arity arg_count) then
       raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
           Metadata.location_or use_meta apply_loc,
           Metadata.name_or use_meta "unknown-native",
           Applicable.to_string native.applicable,
-          (List.length args)
+          arg_count
       )));
-       
-      
     
-    let args = eval_args args in
     (* Apply function body to use metadata, arguments in given environment *)
-    native.body use_meta args environment
+    native.body use_meta (eval_args args) environment
   
   (* Language SpecialForm implemented in OCaml *)
   (* 
@@ -87,51 +81,40 @@ and apply value args environment metadata : Value.t =
     let use_meta = Metadata.fill_w_fallback metadata sform.metadata in
 
     (* Match argument count against arity  *)
-    if not (Applicable.check sform.applicable.arity (List.length args)) then
+    if not (Applicable.check sform.applicable.arity arg_count) then
       raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
           Metadata.location_or use_meta apply_loc, 
           Metadata.name_or use_meta "unknown-special-form",
           Applicable.to_string sform.applicable,
-          (List.length args)
+          arg_count
       )));
     
     sform.body use_meta args environment
 
   (* Lisp defined function *)
-  | Runtime.Lambda (lambda, meta) ->
+  | Runtime.Lambda lambda ->
     (* Make sure function arity matches provided arguments *)
-    if List.length lambda.params <> List.length args then
-      raise (
-        Diagnostics.Error
-        (Diagnostics.Error.Arity_Mismatch (
-          apply_loc,
+    if not (Applicable.check lambda.applicable.arity arg_count) then
+      raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
+          Metadata.location_or lambda.metadata apply_loc,
           Metadata.name_or metadata "anonymous-lambda",
-          (String.concat ", " lambda.params),
-          (List.length args)
+          (Applicable.to_string lambda.applicable),
+          arg_count
       )));
 
     (* Create a closure with parent being function closure when defined *)
     let closure = Environment.create (Some lambda.closure) in
-    (* 
-      Evaluate arguments (Sexpr.t list) 
-      Arguments to lambda are evaluated:
-      (double (+ 2 2)) = (+ 2 2) = 4 |> double
-    *)
-    let args = eval_args args in
 
-    (* Bind lambda.params to values in the function closure *)
+    (* Bind lambda.applicable.args to values in the function closure *)
     List.iter2 
-      (fun name value -> Environment.define closure name value) 
-      lambda.params args;
+      (Environment.define closure) 
+      lambda.applicable.args (eval_args args);
 
     (* Actually execute function body *)
     eval lambda.body closure
   
   (* Not applicable value *)
   | _ ->  
-    raise (
-      Diagnostics.Error (
-        Diagnostics.Error.Not_Applicable 
+    raise (Diagnostics.Error (Diagnostics.Error.Not_Applicable 
         (apply_loc, Value.to_string value)
-      )
-    )
+    ))

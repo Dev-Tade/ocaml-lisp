@@ -46,9 +46,15 @@ let builtin_def =
       | Sexpr.Symbol binding_name -> 
         let binding_value = 
           match Evaluator.eval value environment with
+          
           (* Wrap Runtime.Lambda to use def binding_name as metadata name *)
-          | Runtime.Lambda (func, base_meta) -> 
-            Runtime.Lambda (func, {base_meta with name = Some binding_name})
+          | Runtime.Lambda lambda -> 
+            Runtime.Lambda 
+            {
+              lambda with 
+              metadata = { lambda.metadata with name = Some binding_name }
+            }
+          
           (* Return the value as it is *)
           | value -> value 
         in
@@ -78,16 +84,21 @@ let builtin_lambda =
   let builtin_lambda metadata args environment =
     match args with
     | [Sexpr.List parameters, _; body] ->
-      let params = List.map (
-        function
-        | Sexpr.Symbol name, _ -> name
-        | _ -> failwith "Function parameter name must be a symbol"
-      ) parameters
-      in Lambda ({
-        closure = environment;
-        params;
-        body;
-      }, {metadata with name = None})
+      let arg_names = List.map 
+        begin
+          function
+          | Sexpr.Symbol name, _ -> name
+          | _ -> failwith "Function parameter name must be a symbol"
+        end 
+        parameters
+      in 
+      Lambda
+      {
+        applicable = Applicable.fixed arg_names;
+        metadata   = {metadata with name = None};
+        closure    = environment;
+        body       = body;
+      }
     | _ -> failwith "Lambda expects parameters (list) and body"
   in
 

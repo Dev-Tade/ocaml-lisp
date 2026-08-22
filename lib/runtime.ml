@@ -25,7 +25,7 @@ type value =
 | List of value list
 | Native of native
 | SpecialForm of special_form
-| Lambda of lambda * metadata
+| Lambda of lambda
 and native =
 {
   applicable : applicable;
@@ -40,9 +40,10 @@ and special_form =
 }
 and lambda = 
 {
-  closure: environment;
-  params: string list;
-  body: Sexpr.t;
+  applicable : applicable;
+  metadata   : metadata;
+  closure    : environment;
+  body       : Sexpr.t;
 }
 and environment =
 { 
@@ -227,9 +228,9 @@ module Value = struct
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
     | Native native -> "(native "^ Metadata.to_string native.metadata ^ ")"
     | SpecialForm sform -> "(special-form " ^ Metadata.to_string sform.metadata ^ ")"
-    | Lambda (func, meta) -> 
-      let args = "(" ^ String.concat " " func.params ^ ")" in
-      "(lambda " ^ Metadata.to_string meta ^ " " ^ args ^ ")"
+    | Lambda lambda -> 
+      let args = "(" ^ String.concat " " lambda.applicable.args ^ ")" in
+      "(lambda " ^ Metadata.to_string lambda.metadata ^ " " ^ args ^ ")"
 
   let print (v : t) : unit = 
     print_string (to_string v);
