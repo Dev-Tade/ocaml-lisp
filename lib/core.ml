@@ -10,7 +10,7 @@ let is_false = function
   | _ -> false
 
 let builtin_if =
-  let impl metadata args environment =
+  let builtin_if metadata args environment =
     match args with
     | [] -> failwith "Empty if statement"
     | [cond] -> failwith "Empty if statement <then>"
@@ -29,10 +29,15 @@ let builtin_if =
     | _ -> failwith "Too many parts for if-statement"
   in
 
-  SpecialForm (impl, Metadata.make "if" __FILE__ __LINE__ 0)
+  SpecialForm 
+  {
+    applicable = Applicable.range 2 ["condition"; "then"; "else"];
+    metadata   = Metadata.make "builtin-if" __FILE__ __LINE__ 0;
+    body       = builtin_if;
+  }
 
 let builtin_def =
-  let impl metadata args environment =
+  let builtin_def metadata args environment =
     match args with
     | [] -> failwith "Missing name, value for def"
     | [name] -> failwith "Missing value for def"
@@ -62,10 +67,15 @@ let builtin_def =
     | _ -> failwith "Too many parts for def"
   in
 
-  SpecialForm (impl, Metadata.make "def" __FILE__ __LINE__ 0)
+  SpecialForm
+  {
+    applicable = Applicable.fixed ["name"; "value"];
+    metadata   = Metadata.make "builtin-def" __FILE__ __LINE__ 0;
+    body       = builtin_def;
+  }
 
 let builtin_lambda =
-  let impl metadata args environment =
+  let builtin_lambda metadata args environment =
     match args with
     | [Sexpr.List parameters, _; body] ->
       let params = List.map (
@@ -81,48 +91,66 @@ let builtin_lambda =
     | _ -> failwith "Lambda expects parameters (list) and body"
   in
 
-  SpecialForm (impl, Metadata.make "lambda" __FILE__ __LINE__ 0)
+  SpecialForm
+  {
+    applicable = Applicable.fixed ["arguments"; "body"];
+    metadata   = Metadata.make "builtin-lambda" __FILE__ __LINE__ 0;
+    body       = builtin_lambda;
+  }
 
 let builtin_quote =
-  let impl (metadata : Metadata.t) args (envirnoment : Environment.t) =
-    let rec quote arg = 
-      match Sexpr.raw arg with
-      | Sexpr.Number n -> Runtime.Number n
-      | Sexpr.Symbol s -> Runtime.Symbol s
-      | Sexpr.List xs ->
-        Runtime.List ( List.map quote xs )
-    in
+  let builtin_quote (metadata : Metadata.t) args (environment : Environment.t) =
     match args with
-    | [expr] -> quote expr
+    | [expr] -> Value.from_sexpr expr
     | [] -> failwith "Quote expects something"
     | _ -> failwith "Too many arguments for Quote"
   in
 
-  SpecialForm (impl, Metadata.make "quote" __FILE__ __LINE__ 0)
+  SpecialForm
+  {
+    applicable = Applicable.fixed ["expression"];
+    metadata   = Metadata.make "builtin-quote" __FILE__ __LINE__ 0;
+    body       = builtin_quote;
+  }
 
 let builtin_is_truthy =
-  let impl metadata args =
+  let builtin_is_truthy metadata args environment =
     if List.for_all is_truth args then Number 1
     else Number 0
   in
 
-  NativeFunction (impl, Metadata.make "is_truthy" __FILE__ __LINE__ 0)
+  Native
+  {
+    applicable = Applicable.at_least ["x"];
+    metadata   = Metadata.make "builtin-is-truthy" __FILE__ __LINE__ 0;
+    body       = builtin_is_truthy
+  }
 
 let builtin_is_falsy =
-  let impl metadata args =
+  let builtin_is_falsy metadata args environment =
     if List.for_all is_false args then Number 1
     else Number 0
   in
 
-  NativeFunction (impl, Metadata.make "is_falsy" __FILE__ __LINE__ 0)
+  Native
+  {
+    applicable = Applicable.at_least ["x"];
+    metadata   = Metadata.make "builtin-is-falsy" __FILE__ __LINE__ 0;
+    body       = builtin_is_falsy
+  }
 
 let builtin_print =
-  let impl metadata args =
+  let builtin_print metadata args environment =
     List.iter (fun v -> Value.print v; print_newline ()) args;
     Runtime.Unit
   in
 
-  NativeFunction (impl, Metadata.make "print" __FILE__ __LINE__ 0)
+  Native
+  {
+    applicable = Applicable.at_least ["value..."];
+    metadata   = Metadata.make "builtin-print" __FILE__ __LINE__ 0;
+    body       = builtin_print
+  }
 
 let std = 
   let std = Environment.create None in

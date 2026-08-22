@@ -83,6 +83,12 @@ module Metadata : sig
   type t = metadata
   val none : t
   val make : string -> string -> int -> int -> t
+
+  val fill_w_fallback : t -> t -> t
+
+  val name_or : t -> string -> string
+  val location_or : t -> Diagnostics.Location.t -> Diagnostics.Location.t
+
   val to_string : t -> string
   val print : t -> unit
 end

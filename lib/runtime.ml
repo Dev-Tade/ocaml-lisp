@@ -57,6 +57,31 @@ module Metadata = struct
   let make name file line column =
     { name = Some name; location = Some { source = file; line; column = column; } }
 
+  let fill_w_fallback meta fall =
+    {
+      name =
+        begin match meta.name with
+        | Some _ -> meta.name
+        | None ->   fall.name
+        end;
+
+      location =
+        begin match meta.location with
+        | Some _ -> meta.location
+        | None ->   fall.location
+        end;
+    }
+
+  let name_or meta name =
+    match meta.name with
+    | Some n -> n
+    | None   -> name
+  
+  let location_or meta loc =
+    match meta.location with
+    | Some l -> l
+    | None   -> loc
+
   let to_string metadata =
     let name = 
       match metadata.name with

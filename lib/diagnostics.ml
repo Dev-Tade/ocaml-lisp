@@ -29,7 +29,7 @@ module Error = struct
     | Runtime_Conversion of Location.t * string
     | Unbound_Symbol of Location.t * string
     | Not_Applicable of Location.t * string
-    | Arity_Mismatch of Location.t * string
+    | Arity_Mismatch of Location.t * string * string * int
 
   let to_string (msg : t) : string =
     match msg with
@@ -63,10 +63,10 @@ module Error = struct
         (Location.to_string loc)
         reason
 
-    | Arity_Mismatch (loc, reason) ->
-      Printf.sprintf "%s: Arity mismatch, %s"
+    | Arity_Mismatch (loc, name, args, got) ->
+      Printf.sprintf "%s: Arity mismatch, %s %s, but got %d"
         (Location.to_string loc)
-        reason
+        name args got
 end
 
 exception Error of Error.t

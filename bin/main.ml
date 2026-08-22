@@ -15,20 +15,14 @@ let make_arithmetic_op name initial op values =
 ;; 
 
 let builtin_add =
-  (Runtime.NativeFunction (
-    (fun meta -> make_arithmetic_op "+" 0 (fun acc n -> acc + n)),
-    {
-      name = Some "builtin_add"; 
-      location = Some { 
-        source = __FILE__;
-        line = __LINE__;
-        column = 0;
-      }
-    }
-    )
-  )
+  Runtime.Native 
+  {
+    applicable = Runtime.Applicable.at_least ["x"; "y"];
+    metadata = Runtime.Metadata.make "builtin-add" __FILE__ __LINE__ 0;
+    body = (fun metadata args environment -> make_arithmetic_op "+" 0 (fun acc n -> acc + n) args);
+  }
   
-let builtin_mul meta = make_arithmetic_op "*" 1 (fun acc n -> acc * n)
+let builtin_mul metadata  args environment = make_arithmetic_op "*" 1 (fun acc n -> acc * n) args
 
 let () =
   let repl_env = Runtime.Environment.create (Some Core.std) in
@@ -36,16 +30,12 @@ let () =
   (* Include non core builtins *)
   Runtime.Environment.define repl_env "+" builtin_add;
   Runtime.Environment.define repl_env "*" (
-    NativeFunction (
-      builtin_mul, {
-        name = Some "builtin_mul";
-        location = Some {
-          source = __FILE__;
-          line = __LINE__;
-          column = 0;
-        }
-      }
-    )
+    Runtime.Native 
+    {
+      applicable = Runtime.Applicable.at_least ["x"; "y"];
+      metadata   = Runtime.Metadata.make "builtin-mul" __FILE__ __LINE__ 0;
+      body       = builtin_mul
+    }
   );
 
   let rec repl () =
