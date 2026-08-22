@@ -1,20 +1,43 @@
 open Diagnostics
 open Parser
 
-type metadata = 
+type arity =
+| Fixed of int
+| Range of int * int
+| AtLeast of int
+
+type applicable =
+{
+  arity : arity;
+  args  : string list;
+}
+
+type metadata =
 {
   name : string option;
-  location : Location.t option;
+  location : Diagnostics.Location.t option;
 }
 
 type value =
-  | Unit
-  | Number of int
-  | Symbol of string
-  | List of value list
-  | NativeFunction of (metadata -> value list -> value) * metadata
-  | SpecialForm of (metadata -> Sexpr.t list -> environment -> value) * metadata
-  | Lambda of lambda * metadata
+| Unit
+| Number of int
+| Symbol of string
+| List of value list
+| Native of native
+| SpecialForm of special_form
+| Lambda of lambda * metadata
+and native =
+{
+  applicable : applicable;
+  metadata   : metadata;
+  body       : metadata -> value list -> environment -> value;
+}
+and special_form =
+{
+  applicable : applicable;
+  metadata   : metadata;
+  body       : metadata -> Sexpr.t list -> environment -> value;
+}
 and lambda = 
 {
   closure: environment;
@@ -26,6 +49,7 @@ and environment =
   values : (string, value) Hashtbl.t;
   parent : environment option;
 }
+
 module Metadata = struct
   type t = metadata
   let none = { name = None; location = None; }
@@ -51,6 +75,74 @@ module Metadata = struct
   let print metadata =
     print_string (to_string metadata)
 end
+
+module Applicable = struct
+  type t = applicable
+
+  let fixed args = 
+    { 
+      arity = Fixed (List.length args);
+      args  = args 
+    }
+
+  let range min args = 
+    let max = List.length args in
+
+    if min < 0 then 
+      invalid_arg "Applicable.range: minimum cannot be negative";
+    if min > max then 
+      invalid_arg "Applicable.range: minimum cannot exceed maximum";
+
+    { 
+      arity = 
+        if min = max then Fixed max 
+        else Range (min, max);
+      args  = args
+    }
+  
+  let at_least args =
+    let min = List.length args in
+    
+    if min < 0 then
+    invalid_arg "Applicable.at_least minimum cannot be negative";
+
+    {
+      arity = AtLeast min;
+      args  = args;
+    }
+
+  let check arity input =
+    match arity with
+    | Fixed count      -> input = count
+    | Range (min, max) -> input >= min && input <= max
+    | AtLeast min      -> input >= min
+
+  let to_string applicable =
+    let suffix c = if c = 1 then "argument" else "arguments" in
+
+    match applicable.arity with
+    | Fixed count -> 
+      Printf.sprintf "expects %d %s: %s"
+        count
+        (suffix count)
+        (String.concat ", " applicable.args)
+
+    | Range (min, max) ->
+      Printf.sprintf "expects between %d and %d %s: %s"
+        min max
+        (suffix max)
+        (String.concat ", " applicable.args)
+
+    | AtLeast min ->
+      Printf.sprintf "expects at least %d %s: %s"
+        min
+        (suffix min)
+        (String.concat ", " applicable.args)
+  
+  let print arity =
+    print_string (to_string arity)
+end
+
 module Value = struct
   type t = value
 
@@ -91,8 +183,8 @@ module Value = struct
       | Ok xss -> Ok (Sexpr.List xss, rcl)
     )
     
-    | NativeFunction _ ->
-      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert NativeFunction to Sexpr"))
+    | Native _ ->
+      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Native to Sexpr"))
 
     | SpecialForm _ ->
       Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert SpecialForm to Sexpr"))
@@ -108,8 +200,8 @@ module Value = struct
     | Number n -> Printf.sprintf "(number %d)" n 
     | Symbol s -> Printf.sprintf "(symbol %s)" s
     | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
-    | NativeFunction (_, meta) -> "(native "^ Metadata.to_string meta ^ ")"
-    | SpecialForm (_, meta) -> "(special-form " ^ Metadata.to_string meta ^ ")"
+    | Native native -> "(native "^ Metadata.to_string native.metadata ^ ")"
+    | SpecialForm sform -> "(special-form " ^ Metadata.to_string sform.metadata ^ ")"
     | Lambda (func, meta) -> 
       let args = "(" ^ String.concat " " func.params ^ ")" in
       "(lambda " ^ Metadata.to_string meta ^ " " ^ args ^ ")"
