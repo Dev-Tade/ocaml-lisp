@@ -26,6 +26,7 @@ module Error = struct
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
     (* Evaluator/Runtime Errors *)
+    | Runtime_Conversion of Location.t * string
     | Unbound_Symbol of Location.t * string
     | Not_Applicable of Location.t * string
     | Arity_Mismatch of Location.t * string
@@ -47,6 +48,11 @@ module Error = struct
         (Location.to_string loc)
         reason
     
+    | Runtime_Conversion (loc, reason) ->
+      Printf.sprintf "%s: Runtime conversion error: %s"
+        (Location.to_string loc)
+        reason
+
     | Unbound_Symbol (loc, reason) ->
       Printf.sprintf "%s: Unbound symbol \"%s\""
         (Location.to_string loc)

@@ -24,11 +24,17 @@ and metadata =
   name : string option;
   location : Diagnostics.Location.t option;
 }
+
 module Value : sig
   type t = value
+
+  val from_sexpr : Sexpr.t -> t
+  val to_sexpr : t -> (Sexpr.t, Diagnostics.Error.t) result
+
   val to_string : t -> string
   val print : t -> unit
 end
+
 module Environment : sig
   type t = environment
   val create : t option -> t

@@ -53,7 +53,56 @@ module Metadata = struct
 end
 module Value = struct
   type t = value
-  
+
+  let rec from_sexpr sexpr =
+    match Sexpr.raw sexpr with
+    | Sexpr.Number n -> Number n
+    | Sexpr.Symbol s -> Symbol s
+    | Sexpr.List xs ->
+      List ( List.map from_sexpr xs )
+
+  let rec to_sexpr value =
+    (* 
+      Dummy location for Sexpr.t coming from runtime conversions,
+      if at some point the other runtime value variants get metadata
+      then this code should be updated to use that instead.
+      rcl = runtime conversion location 
+    *)
+    let rcl : Location.t = 
+      { source = __FILE__; line = __LINE__; column = 0; }
+    in
+
+    let rec map_result f xs =
+      List.fold_right
+      (fun x acc ->
+        match f x, acc with
+        | Result.Ok y, Result.Ok ys -> Result.ok (y :: ys)  
+        | Result.Error err, _ -> Result.Error err  
+        | _, Result.Error err -> Result.Error err)
+      xs (Result.Ok [])
+    in
+
+    match value with
+    | Number n -> Ok (Sexpr.Number n, rcl)
+    | Symbol s -> Ok (Sexpr.Symbol s, rcl)
+    | List xs -> (
+      match map_result to_sexpr xs with
+      | Error err -> Error err
+      | Ok xss -> Ok (Sexpr.List xss, rcl)
+    )
+    
+    | NativeFunction _ ->
+      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert NativeFunction to Sexpr"))
+
+    | SpecialForm _ ->
+      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert SpecialForm to Sexpr"))
+      
+    | Lambda _ ->
+      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Lambda to Sexpr"))
+      
+    | Unit ->
+      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Unit to Sexpr"))
+        
   let rec to_string = function
     | Unit -> "(unit)"
     | Number n -> Printf.sprintf "(number %d)" n 
