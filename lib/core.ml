@@ -12,21 +12,21 @@ let is_false = function
 let builtin_if =
   let builtin_if metadata args environment =
     match args with
-    | [] -> failwith "Empty if statement"
-    | [cond] -> failwith "Empty if statement <then>"
-    | [cond; success] -> (
+    | [cond; success] ->
       if is_truth (Evaluator.eval cond environment) then
         Evaluator.eval success environment
       else Runtime.Unit
-    )
-    | [cond; success; failure] -> (
+    
+    | [cond; success; failure] -> 
       if is_truth (Evaluator.eval cond environment) then
         Evaluator.eval success environment
       else
         Evaluator.eval failure environment
-    )
 
-    | _ -> failwith "Too many parts for if-statement"
+    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
+      { source = __FILE__; line = __LINE__; column = 0; },
+      "builtin-if(0): arguments mismatch"
+    )))
   in
 
   SpecialForm 
@@ -39,8 +39,6 @@ let builtin_if =
 let builtin_def =
   let builtin_def metadata args environment =
     match args with
-    | [] -> failwith "Missing name, value for def"
-    | [name] -> failwith "Missing value for def"
     | [name; value] -> (
       match Sexpr.raw name with
       | Sexpr.Symbol binding_name -> 
@@ -65,12 +63,10 @@ let builtin_def =
       | _ -> failwith "Name for def must be a symbol"
     )
 
-    (* TODO: 
-      I think all the remainings should be passed to eval 
-      but in any case this function does require a lot of logic
-      to handle destructuring  
-    *)
-    | _ -> failwith "Too many parts for def"
+    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
+      { source = __FILE__; line = __LINE__; column = 0; },
+      "builtin-def(0): arguments mismatch"
+    )))
   in
 
   SpecialForm
@@ -83,14 +79,16 @@ let builtin_def =
 let builtin_lambda =
   let builtin_lambda metadata args environment =
     match args with
-    | [Sexpr.List parameters, _; body] ->
-      let arg_names = List.map 
-        begin
-          function
+    | [arguments; body] ->
+      let arg_names = 
+        match Sexpr.raw arguments with
+        | Sexpr.List arguments -> List.map 
+          begin function
           | Sexpr.Symbol name, _ -> name
-          | _ -> failwith "Function parameter name must be a symbol"
-        end 
-        parameters
+          | _, loc -> failwith "function parameter must be a symbol"
+          end 
+          arguments
+        | _ -> failwith "Lambda expects `arguments to be a list"
       in 
       Lambda
       {
@@ -99,7 +97,11 @@ let builtin_lambda =
         closure    = environment;
         body       = body;
       }
-    | _ -> failwith "Lambda expects parameters (list) and body"
+
+    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
+      { source = __FILE__; line = __LINE__; column = 0; },
+      "builtin-lambda(0): arguments mismatch"
+    )))
   in
 
   SpecialForm
@@ -113,8 +115,10 @@ let builtin_quote =
   let builtin_quote (metadata : Metadata.t) args (environment : Environment.t) =
     match args with
     | [expr] -> Value.from_sexpr expr
-    | [] -> failwith "Quote expects something"
-    | _ -> failwith "Too many arguments for Quote"
+    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
+      { source = __FILE__; line = __LINE__; column = 0; },
+      "builtin-quote(0): arguments mismatch"
+    )))
   in
 
   SpecialForm
@@ -158,7 +162,7 @@ let builtin_print =
 
   Native
   {
-    applicable = Applicable.at_least ["value..."];
+    applicable = Applicable.at_least ["values..."];
     metadata   = Metadata.make "builtin-print" __FILE__ __LINE__ 0;
     body       = builtin_print
   }

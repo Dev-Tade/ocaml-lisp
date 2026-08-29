@@ -20,6 +20,8 @@ end
 
 module Error = struct
   type t =
+    (* General Purpose *)
+    | Unreacheable of Location.t * string
     (* Lexer Errors *)
     | Unexpected_Character of Location.t * char
     (* Parser Errors *)
@@ -33,6 +35,11 @@ module Error = struct
 
   let to_string (msg : t) : string =
     match msg with
+    | Unreacheable (loc, reason) ->
+      Printf.sprintf "%s: unreacheable %s!"
+        (Location.to_string loc)
+        reason
+
     | Unexpected_Character (loc, reason) ->
       Printf.sprintf "%s: Unexpected character '%c'"
         (Location.to_string loc)
