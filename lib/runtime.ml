@@ -209,17 +209,14 @@ module Value = struct
       | Ok xss -> Ok (Sexpr.List xss, rcl)
     )
     
-    | Native _ ->
-      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Native to Sexpr"))
+    | Native _ -> Error (rcl, "Native")
 
-    | SpecialForm _ ->
-      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert SpecialForm to Sexpr"))
+    | SpecialForm _ -> Error (rcl, "SpecialForm")
       
-    | Lambda _ ->
-      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Lambda to Sexpr"))
+    | Lambda _ -> Error (rcl, "Lambda")
       
     | Unit ->
-      Error (Diagnostics.Error.Runtime_Conversion (rcl, "Can't convert Unit to Sexpr"))
+      Error (rcl, "Unit")
         
   let rec to_string = function
     | Unit -> "(unit)"

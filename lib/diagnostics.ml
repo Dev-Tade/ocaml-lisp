@@ -8,6 +8,9 @@ module Location = struct
 
   type 'a located = 'a * t 
 
+  let make file line column =
+    { source = file; line; column; }
+
   let to_string (loc : t) : string =
     Printf.sprintf "%s:%d:%d" 
       loc.source 
@@ -18,21 +21,58 @@ module Location = struct
     print_string (to_string loc)
 end
 
-module Error = struct
+module Errors = struct
   type t =
-    (* Lexer Errors *)
+    (* General Purpose *)
+    | Unreacheable of Location.t * string
+    (* Lexer *)
     | Unexpected_Character of Location.t * char
-    (* Parser Errors *)
+    (* Parser *)
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
-    (* Evaluator/Runtime Errors *)
-    | Runtime_Conversion of Location.t * string
+    (* Evaluator/Runtime *)
+    | Invalid_Type of Location.t * string
+    | Invalid_Conversion of Location.t * string * string
     | Unbound_Symbol of Location.t * string
     | Not_Applicable of Location.t * string
-    | Arity_Mismatch of Location.t * string * string * int
+    | Arity_Mismatch of Location.t * string * string list * string list
+
+  exception Error of t
+
+  let unreacheable loc where = 
+    raise (Error (Unreacheable (loc, where)))
+  
+  let unexpected_character loc character = 
+    raise (Error (Unexpected_Character (loc, character))) 
+  
+  let unexpected_token loc token_string = 
+    raise (Error (Unexpected_Token (loc, token_string)))
+  
+  let unexpected_eof loc what =
+    raise (Error (Unexpected_EndOfInput (loc, what)))
+  
+  let invalid_type loc typename =
+    raise (Error (Invalid_Type (loc, typename)))
+  
+  let invalid_conversion loc from_type to_type =
+    raise (Error (Invalid_Conversion (loc, from_type, to_type)))
+
+  let unbound_symbol loc symbol = 
+    raise (Error (Unbound_Symbol (loc, symbol)))
+
+  let not_applicable loc what =
+    raise (Error (Not_Applicable (loc, what)))
+    
+  let arity_mismatch loc func args got =
+    raise (Error (Arity_Mismatch (loc, func, args, got)))
 
   let to_string (msg : t) : string =
     match msg with
+    | Unreacheable (loc, reason) ->
+      Printf.sprintf "%s: unreacheable %s!"
+        (Location.to_string loc)
+        reason
+
     | Unexpected_Character (loc, reason) ->
       Printf.sprintf "%s: Unexpected character '%c'"
         (Location.to_string loc)
@@ -48,10 +88,15 @@ module Error = struct
         (Location.to_string loc)
         reason
     
-    | Runtime_Conversion (loc, reason) ->
-      Printf.sprintf "%s: Runtime conversion error: %s"
+    | Invalid_Type (loc, typename) ->
+      Printf.sprintf "%s: Invalid type %s"
+      (Location.to_string loc) 
+      typename
+
+    | Invalid_Conversion (loc, from_type, to_type) ->
+      Printf.sprintf "%s: Invalid conversion, can't convert %s to %s"
         (Location.to_string loc)
-        reason
+        from_type to_type
 
     | Unbound_Symbol (loc, reason) ->
       Printf.sprintf "%s: Unbound symbol \"%s\""
@@ -63,10 +108,25 @@ module Error = struct
         (Location.to_string loc)
         reason
 
-    | Arity_Mismatch (loc, name, args, got) ->
-      Printf.sprintf "%s: Arity mismatch, %s %s, but got %d"
-        (Location.to_string loc)
-        name args got
-end
+    | Arity_Mismatch (loc, name, args, gots) ->
+      let suffix = function
+      | x when x <> 1 -> "arguments"
+      | _ -> "argument"
+      in
 
-exception Error of Error.t
+      let list_suffix args =
+        match args with
+        | [] -> ""
+        | xs -> ": " ^ (String.concat ", " xs)
+      in
+
+      let args_count = List.length args in
+      let gots_count = List.length gots in
+      let miss_count = args_count - gots_count in
+
+      Printf.sprintf "%s: Arity mismatch %s expects %d %s%s, but got %d %s%s. Missing %d %s"
+      (Location.to_string loc) name 
+      args_count (suffix args_count) (list_suffix args)
+      gots_count (suffix gots_count) (list_suffix gots)
+      miss_count (suffix miss_count)
+end

@@ -119,13 +119,7 @@ let lex (contents : string) ~(source : string) : (Token.t * Location.t) list =
         let token, new_state = read_token_while state isalpha text_to_symbol in
         token :: (next_token new_state)
 
-      | i -> 
-        raise (
-          Diagnostics.Error (
-            Diagnostics.Error.Unexpected_Character 
-            (state.loc, i)
-          )
-        )
+      | i -> Errors.unexpected_character (state.loc) i
   in 
   next_token { 
     source = contents; 
