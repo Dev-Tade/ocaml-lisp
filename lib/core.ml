@@ -1,5 +1,6 @@
 open Parser
 open Runtime
+open Diagnostics
 
 let is_truth = function
   | Runtime.Number x when x = 0 -> false
@@ -23,10 +24,9 @@ let builtin_if =
       else
         Evaluator.eval failure environment
 
-    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
-      { source = __FILE__; line = __LINE__; column = 0; },
+    | _ -> Errors.unreacheable 
+      (Location.make __FILE__ __LINE__ 0)
       "builtin-if(0): arguments mismatch"
-    )))
   in
 
   SpecialForm 
@@ -63,10 +63,9 @@ let builtin_def =
       | _ -> failwith "Name for def must be a symbol"
     )
 
-    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
-      { source = __FILE__; line = __LINE__; column = 0; },
+    | _ -> Errors.unreacheable
+      (Location.make __FILE__ __LINE__ 0)
       "builtin-def(0): arguments mismatch"
-    )))
   in
 
   SpecialForm
@@ -98,10 +97,9 @@ let builtin_lambda =
         body       = body;
       }
 
-    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
-      { source = __FILE__; line = __LINE__; column = 0; },
+    | _ -> Errors.unreacheable
+      (Location.make __FILE__ __LINE__ 0)
       "builtin-lambda(0): arguments mismatch"
-    )))
   in
 
   SpecialForm
@@ -115,10 +113,9 @@ let builtin_quote =
   let builtin_quote (metadata : Metadata.t) args (environment : Environment.t) =
     match args with
     | [expr] -> Value.from_sexpr expr
-    | _ -> raise (Diagnostics.Error (Diagnostics.Error.Unreacheable (
-      { source = __FILE__; line = __LINE__; column = 0; },
+    | _ -> Errors.unreacheable
+      (Location.make __FILE__ __LINE__ 0)
       "builtin-quote(0): arguments mismatch"
-    )))
   in
 
   SpecialForm

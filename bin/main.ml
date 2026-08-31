@@ -1,4 +1,5 @@
 open Ocaml_lisp
+open Diagnostics
 
 let make_arithmetic_op name initial op values =
   let rec apply values acc =
@@ -64,9 +65,10 @@ let () =
 
           repl ()
         with 
-        | Diagnostics.Error err ->
-          Printf.printf "Error at %s\n" (Diagnostics.Error.to_string err);
+        | Errors.Error err ->
+          Printf.printf "Error at %s\n" (Errors.to_string err);
           repl()
+          
         | Failure msg ->
           Printf.printf "! Error: %s\n" msg;
           repl ()

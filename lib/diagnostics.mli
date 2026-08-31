@@ -23,6 +23,8 @@ module Errors : sig
     val unexpected_token : Location.t -> string -> 'a
     val unexpected_eof : Location.t -> string -> 'a
     (* Evaluator/Runtime *)
+    val invalid_type : Location.t -> string -> 'a
+    val invalid_conversion : Location.t -> string -> string -> 'a
     val unbound_symbol : Location.t -> string -> 'a
     val not_applicable : Location.t -> string -> 'a
     val arity_mismatch : Location.t -> string -> string list -> string list -> 'a

@@ -1,5 +1,6 @@
 open Parser
 open Runtime
+open Diagnostics
 
 let rec eval (expr : Sexpr.t) (environment : Environment.t) =
   match Sexpr.raw expr with
@@ -11,10 +12,7 @@ let rec eval (expr : Sexpr.t) (environment : Environment.t) =
     | Some value -> value
     | None ->
       (* Symbol is unbound *)
-      raise (
-        Diagnostics.Error
-        (Diagnostics.Error.Unbound_Symbol (Sexpr.location expr, s))
-      )
+      Errors.unbound_symbol (Sexpr.location expr) s
   )
 
   (* Empty list *)
@@ -58,12 +56,12 @@ and apply value args environment metadata : Value.t =
 
     (* Match argument count against arity  *)
     if not (Applicable.check native.applicable.arity arg_count) then
-      raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
-          Metadata.location_or use_meta apply_loc,
-          Metadata.name_or use_meta "unknown-native",
-          Applicable.to_string native.applicable,
-          arg_count
-      )));
+      Errors.arity_mismatch
+        (Metadata.location_or use_meta apply_loc)
+        (Metadata.name_or use_meta "unknown-native")
+        (native.applicable.args)
+        (List.map Sexpr.to_string args)
+      ;
     
     (* Apply function body to use metadata, arguments in given environment *)
     native.body use_meta (eval_args args) environment
@@ -82,12 +80,12 @@ and apply value args environment metadata : Value.t =
 
     (* Match argument count against arity  *)
     if not (Applicable.check sform.applicable.arity arg_count) then
-      raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
-          Metadata.location_or use_meta apply_loc, 
-          Metadata.name_or use_meta "unknown-special-form",
-          Applicable.to_string sform.applicable,
-          arg_count
-      )));
+      Errors.arity_mismatch
+        (Metadata.location_or use_meta apply_loc) 
+        (Metadata.name_or use_meta "unknown-special-form")
+        (sform.applicable.args)
+        (List.map Sexpr.to_string args)
+      ;  
     
     sform.body use_meta args environment
 
@@ -95,12 +93,12 @@ and apply value args environment metadata : Value.t =
   | Runtime.Lambda lambda ->
     (* Make sure function arity matches provided arguments *)
     if not (Applicable.check lambda.applicable.arity arg_count) then
-      raise (Diagnostics.Error (Diagnostics.Error.Arity_Mismatch (
-          Metadata.location_or lambda.metadata apply_loc,
-          Metadata.name_or metadata "anonymous-lambda",
-          (Applicable.to_string lambda.applicable),
-          arg_count
-      )));
+      Errors.arity_mismatch
+        (Metadata.location_or lambda.metadata apply_loc)
+        (Metadata.name_or metadata "anonymous-lambda")
+        (lambda.applicable.args)
+        (List.map Sexpr.to_string args)
+      ;
 
     (* Create a closure with parent being function closure when defined *)
     let closure = Environment.create (Some lambda.closure) in
@@ -115,6 +113,4 @@ and apply value args environment metadata : Value.t =
   
   (* Not applicable value *)
   | _ ->  
-    raise (Diagnostics.Error (Diagnostics.Error.Not_Applicable 
-        (apply_loc, Value.to_string value)
-    ))
+    Errors.not_applicable apply_loc (Value.to_string value)
