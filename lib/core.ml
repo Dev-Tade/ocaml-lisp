@@ -131,9 +131,13 @@ let builtin_eval =
     | [value] -> 
       begin match Value.to_sexpr value with
       | Ok res -> Evaluator.eval res environment
-      | Error err -> raise (Diagnostics.Error err)
+      | Error (loc, from_type) -> Errors.invalid_conversion
+        loc from_type "Sexpr.t"
       end
-    | _ -> failwith "unreacheable"
+      
+    | _ -> Errors.unreacheable
+      (Location.make __FILE__ __LINE__ 0)
+      "builtin-eval(0): arguments mismatch"
   in
 
   Native
