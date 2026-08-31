@@ -1,3 +1,4 @@
+open Diagnostics
 open Parser
 
 type arity =
@@ -14,7 +15,7 @@ type applicable =
 type metadata =
 {
   name : string option;
-  location : Diagnostics.Location.t option;
+  location : Location.t option;
 }
 
 type value =
@@ -54,7 +55,7 @@ module Value : sig
   type t = value
 
   val from_sexpr : Sexpr.t -> t
-  val to_sexpr : t -> (Sexpr.t, Diagnostics.Error.t) result
+  val to_sexpr : t -> (Sexpr.t, Location.t * string) result
 
   val to_string : t -> string
   val print : t -> unit
@@ -88,7 +89,7 @@ module Metadata : sig
   val fill_w_fallback : t -> t -> t
 
   val name_or : t -> string -> string
-  val location_or : t -> Diagnostics.Location.t -> Diagnostics.Location.t
+  val location_or : t -> Location.t -> Location.t
 
   val to_string : t -> string
   val print : t -> unit

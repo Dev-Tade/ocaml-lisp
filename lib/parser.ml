@@ -1,5 +1,6 @@
-open Diagnostics
 open Lexer
+open Diagnostics
+
 module Sexpr = struct
   type node =
     | Symbol of string
@@ -66,12 +67,7 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
           | Some l -> l
           | None -> failwith "How did you reach this?"
         in
-        raise (
-          Diagnostics.Error (
-            Diagnostics.Error.Unexpected_EndOfInput 
-            (eoi_loc, "Missing ')'")
-          )
-        )
+        Errors.unexpected_eof eoi_loc "Missing ')'"
     )
 
     | now :: rest ->
@@ -80,13 +76,8 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
       match tok with
       (* Illegal Token *) 
       | Token.Illegal -> 
-        raise (
-          Diagnostics.Error (
-            Diagnostics.Error.Unexpected_Token 
-            (loc, Token.to_string tok)
-          )
-        )
-
+        Errors.unexpected_token loc (Token.to_string tok)
+      
       (* List opening *)
       | Token.LParen ->
         (* 
@@ -108,12 +99,8 @@ let parse (tokens : (Token.t * Location.t) list) : Sexpr.t list =
         match state.stack with
         (* Close a non existent list *)
         | [] ->
-          raise (
-            Diagnostics.Error (
-              Diagnostics.Error.Unexpected_Token 
-              (loc, Token.to_string tok)
-            )
-          )
+          Errors.unexpected_token loc (Token.to_string tok)
+
         (* Close the current list being parsed *)
         | (parent_list, opening_loc) :: rest_stack -> 
           (* 
