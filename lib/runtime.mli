@@ -57,6 +57,9 @@ module Value : sig
   val from_sexpr : Sexpr.t -> t
   val to_sexpr : t -> (Sexpr.t, Location.t * string) result
 
+  val basetype : string
+  val typename : t -> string
+
   val to_string : t -> string
   val print : t -> unit
 end
