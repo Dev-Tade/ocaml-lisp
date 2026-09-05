@@ -60,7 +60,11 @@ let builtin_def =
         Environment.define environment binding_name binding_value;
         Unit
 
-      | _ -> failwith "Name for def must be a symbol"
+      | _ -> Errors.invalid_type 
+        (Sexpr.location name) 
+        (Sexpr.to_string  name) 
+        (Sexpr.typename (Sexpr.Symbol ""))
+        "def binding"
     )
 
     | _ -> Errors.unreacheable
@@ -84,10 +88,17 @@ let builtin_lambda =
         | Sexpr.List arguments -> List.map 
           begin function
           | Sexpr.Symbol name, _ -> name
-          | _, loc -> failwith "function parameter must be a symbol"
+          | invalid -> Errors.invalid_type 
+            (Sexpr.location invalid) 
+            (Sexpr.to_string invalid) (Sexpr.typename (Sexpr.Symbol ""))
+            "lambda argument"
           end 
           arguments
-        | _ -> failwith "Lambda expects `arguments to be a list"
+
+        | invalid -> Errors.invalid_type 
+          (Sexpr.location arguments)
+          (Sexpr.to_string arguments) (Sexpr.typename (Sexpr.List []))
+          "lambda arguments"
       in 
       Lambda
       {
@@ -131,10 +142,12 @@ let builtin_eval =
     | [value] -> 
       begin match Value.to_sexpr value with
       | Ok res -> Evaluator.eval res environment
-      | Error (loc, from_type) -> Errors.invalid_conversion
-        loc from_type "Sexpr.t"
-      end
       
+      | Error (loc, from_type) -> Errors.invalid_conversion
+        loc 
+        from_type Sexpr.basetype
+      end
+
     | _ -> Errors.unreacheable
       (Location.make __FILE__ __LINE__ 0)
       "builtin-eval(0): arguments mismatch"
