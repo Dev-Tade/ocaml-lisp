@@ -15,12 +15,21 @@ module Sexpr = struct
   let make_number num loc = (Number num, loc)
   let make_list items loc = (List items, loc)
 
+  let basetype = "Sexpr"
+
+  let typename t =
+    match t with
+    | Symbol _ -> "symbol"
+    | Number _ -> "number"
+    | List _ -> "list"
+
   let to_string (expr : t) =
     let rec aux expr =
       match raw expr with
-      | Symbol s -> "(Symbol " ^ s ^ ")"
-      | Number n -> "(Number " ^ string_of_int n ^ ")"
-      | List xs -> "(" ^ String.concat "" (List.map aux xs) ^ ")"
+      | Symbol s -> "(" ^ typename (raw expr) ^ " " ^ s ^ ")"
+      | Number n -> "(" ^ typename (raw expr) ^ " " ^ string_of_int n ^ ")"
+      | List xs -> 
+        "(" ^ typename (raw expr) ^ " (" ^ String.concat "" (List.map aux xs) ^ "))"
     in
     aux expr
 

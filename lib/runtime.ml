@@ -217,17 +217,37 @@ module Value = struct
       
     | Unit ->
       Error (rcl, "Unit")
+
+  let basetype = "Value"
+
+  let typename = function
+  | Unit          -> "unit"
+  | List _        -> "list"
+  | Number _      -> "number"
+  | Symbol _      -> "symbol"
+  | Native _      -> "native"
+  | Lambda _      -> "lambda"
+  | SpecialForm _ -> "special-form"
         
-  let rec to_string = function
-    | Unit -> "(unit)"
-    | Number n -> Printf.sprintf "(number %d)" n 
-    | Symbol s -> Printf.sprintf "(symbol %s)" s
-    | List xs -> "(list (" ^ String.concat " " (List.map to_string xs) ^ "))"
-    | Native native -> "(native "^ Metadata.to_string native.metadata ^ ")"
-    | SpecialForm sform -> "(special-form " ^ Metadata.to_string sform.metadata ^ ")"
+  let rec to_string t =
+    match t with
+    | Unit -> "(" ^ typename t ^ ")"
+    | Number n -> "(" ^ typename t ^ " " ^ string_of_int n ^ ")" 
+    | Symbol s -> "(" ^ typename t ^ " " ^ s ^ ")" 
+
+    | List xs -> 
+      "(" ^ typename t ^ " (" ^ String.concat " " (List.map to_string xs) ^ "))"
+
+    | Native native -> 
+      "(" ^ typename t ^ " " ^ Metadata.to_string native.metadata ^ ")"
+      
+    | SpecialForm sform -> 
+      "(" ^ typename t ^ " " ^ Metadata.to_string sform.metadata ^ ")"
+      
     | Lambda lambda -> 
       let args = "(" ^ String.concat " " lambda.applicable.args ^ ")" in
-      "(lambda " ^ Metadata.to_string lambda.metadata ^ " " ^ args ^ ")"
+      let meta = Metadata.to_string lambda.metadata in
+      "(" ^ typename t ^ " " ^ meta ^ " : " ^ args ^ ")"
 
   let print (v : t) : unit = 
     print_string (to_string v);

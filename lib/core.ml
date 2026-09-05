@@ -60,7 +60,11 @@ let builtin_def =
         Environment.define environment binding_name binding_value;
         Unit
 
-      | _ -> failwith "Name for def must be a symbol"
+      | _ -> Errors.invalid_type 
+        (Sexpr.location name) 
+        (Sexpr.to_string  name) 
+        (Sexpr.typename (Sexpr.Symbol ""))
+        "def binding"
     )
 
     | _ -> Errors.unreacheable
@@ -84,10 +88,17 @@ let builtin_lambda =
         | Sexpr.List arguments -> List.map 
           begin function
           | Sexpr.Symbol name, _ -> name
-          | _, loc -> failwith "function parameter must be a symbol"
+          | invalid -> Errors.invalid_type 
+            (Sexpr.location invalid) 
+            (Sexpr.to_string invalid) (Sexpr.typename (Sexpr.Symbol ""))
+            "lambda argument"
           end 
           arguments
-        | _ -> failwith "Lambda expects `arguments to be a list"
+
+        | invalid -> Errors.invalid_type 
+          (Sexpr.location arguments)
+          (Sexpr.to_string arguments) (Sexpr.typename (Sexpr.List []))
+          "lambda arguments"
       in 
       Lambda
       {
@@ -123,6 +134,30 @@ let builtin_quote =
     applicable = Applicable.fixed ["expression"];
     metadata   = Metadata.make "builtin-quote" __FILE__ __LINE__ 0;
     body       = builtin_quote;
+  }
+
+let builtin_eval =
+  let builtin_eval (metadata : Metadata.t) args (environment : Environment.t) =
+    match args with
+    | [value] -> 
+      begin match Value.to_sexpr value with
+      | Ok res -> Evaluator.eval res environment
+      
+      | Error (loc, from_type) -> Errors.invalid_conversion
+        loc 
+        from_type Sexpr.basetype
+      end
+
+    | _ -> Errors.unreacheable
+      (Location.make __FILE__ __LINE__ 0)
+      "builtin-eval(0): arguments mismatch"
+  in
+
+  Native
+  {
+    applicable = Applicable.fixed ["expression"];
+    metadata   = Metadata.make "builtin-eval" __FILE__ __LINE__ 0;
+    body       = builtin_eval;
   }
 
 let builtin_is_truthy =
@@ -170,6 +205,7 @@ let std =
   Environment.define std "def" builtin_def;
   Environment.define std "lambda" builtin_lambda;
   Environment.define std "quote" builtin_quote;
+  Environment.define std "eval" builtin_eval;
   Environment.define std "is_truthy" builtin_is_truthy;
   Environment.define std "is_falsy" builtin_is_falsy;
   Environment.define std "print" builtin_print;

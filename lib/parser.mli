@@ -15,6 +15,9 @@ module Sexpr : sig
   val make_number : int -> Location.t -> t
   val make_list : t list -> Location.t -> t
 
+  val basetype : string
+  val typename : node -> string
+
   val to_string : t -> string
   val print : ?locate:bool -> t -> unit
 end

@@ -31,7 +31,7 @@ module Errors = struct
     | Unexpected_Token of Location.t * string
     | Unexpected_EndOfInput of Location.t * string
     (* Evaluator/Runtime *)
-    | Invalid_Type of Location.t * string
+    | Invalid_Type of Location.t * string * string * string
     | Invalid_Conversion of Location.t * string * string
     | Unbound_Symbol of Location.t * string
     | Not_Applicable of Location.t * string
@@ -51,8 +51,8 @@ module Errors = struct
   let unexpected_eof loc what =
     raise (Error (Unexpected_EndOfInput (loc, what)))
   
-  let invalid_type loc typename =
-    raise (Error (Invalid_Type (loc, typename)))
+  let invalid_type loc typename expected reason =
+    raise (Error (Invalid_Type (loc, typename, expected, reason)))
   
   let invalid_conversion loc from_type to_type =
     raise (Error (Invalid_Conversion (loc, from_type, to_type)))
@@ -88,10 +88,10 @@ module Errors = struct
         (Location.to_string loc)
         reason
     
-    | Invalid_Type (loc, typename) ->
-      Printf.sprintf "%s: Invalid type %s"
+    | Invalid_Type (loc, typename, expected, reason) ->
+      Printf.sprintf "%s: Invalid type %s expected %s: %s"
       (Location.to_string loc) 
-      typename
+      typename expected reason
 
     | Invalid_Conversion (loc, from_type, to_type) ->
       Printf.sprintf "%s: Invalid conversion, can't convert %s to %s"
